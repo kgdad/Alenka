@@ -22,23 +22,21 @@
 // ---------------------------------------------------
 //
 
-
+#include "cm.h"
 
 #ifdef __cplusplus		// If c++ then expose data.dict structure and calls
 //------------------------------------------------------------------------------------------
 #include <map>
 
-struct col_data {
-        unsigned int col_type;
-        unsigned int col_length;
-};
+//struct col_data {
+//        unsigned int col_type;
+//        unsigned int col_length;
+//};
 
 extern map<string, map<string, col_data> > data_dict;
 extern void load_col_data(map<string, map<string, col_data> >& data_dict, string file_name);
 //------------------------------------------------------------------------------------------
 #endif
-
-
 
 // call:
 void alenkaInit(char ** av);
@@ -48,4 +46,8 @@ void alenkaClose();
 // or:
 int execute_file(int ac, char **av);
 
+//jdbc calls
+int alenka_JDBC(char *s);
+CudaSet* initializeResultSet_JDBC(char *f);
+void resultSetClose_JDBC();
 
