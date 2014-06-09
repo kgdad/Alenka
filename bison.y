@@ -19,7 +19,6 @@
 
 #include "lex.yy.c"
 #include "cm.h"
-#include <iomanip>
 
     void clean_queues();
     void order_inplace(CudaSet* a, stack<string> exe_type, bool update_int);
@@ -110,18 +109,18 @@
 %left '+' '-'
 %left '*' '/' '%' MOD
 %left '^'
-%nonassoc UMINUS
 
+%token FROM
+%token MULITE
+%token DELETE
 %token OR
 %token LOAD
-%token STREAM
 %token FILTER
 %token BY
 %token JOIN
 %token STORE
 %token INTO
 %token GROUP
-%token FROM
 %token SELECT
 %token AS
 %token ORDER
@@ -145,7 +144,6 @@
 %token SEGMENTS
 %token PRESORTED
 %token PARTITION
-%token DELETE
 %token INSERT
 %token WHERE
 %token DISPLAY
@@ -161,7 +159,7 @@
 %token DESCRIBE
 %token DROP
 
-%type <intval> load_list  opt_where opt_limit sort_def del_where
+%type <intval> load_list  opt_where opt_limit sort_def
 %type <intval> val_list opt_val_list expr_list opt_group_list join_list
 %start stmt_list
 %%
@@ -178,33 +176,32 @@ stmt:
 select_stmt { emit("STMT"); }
 ;
 select_stmt:
-NAME ASSIGN SELECT expr_list FROM NAME opt_group_list
-{ emit_select($1, $6, $7); } ;
+  NAME ASSIGN SELECT expr_list FROM NAME opt_group_list
+{ emit_select($1, $6, $7); }
 | NAME ASSIGN LOAD FILENAME USING '(' FILENAME ')' AS '(' load_list ')'
-{  emit_load($1, $4, $11, $7); } ;
+{  emit_load($1, $4, $11, $7); }
 | NAME ASSIGN FILTER NAME opt_where
 {  emit_filter($1, $4);}
 | NAME ASSIGN ORDER NAME BY opt_val_list
 {  emit_order($1, $4, $6);}
 | NAME ASSIGN SELECT expr_list FROM NAME join_list opt_group_list
-{ emit_join($1,$6,$7); }
+{  emit_join($1,$6,$7); }
 | STORE NAME INTO FILENAME USING '(' FILENAME ')' opt_limit
-{ emit_store($2,$4,$7); }
+{  emit_store($2,$4,$7); }
 | STORE NAME INTO FILENAME opt_limit BINARY sort_def
-{ emit_store_binary($2,$4); }
-| DELETE FROM NAME del_where
-{  emit_delete($3);}
+{  emit_store_binary($2,$4); }
+| DESCRIBE NAME 
+{  emit_describe_table($2);}
 | INSERT INTO NAME SELECT expr_list FROM NAME
 {  emit_insert($3, $7);}
+| DELETE FROM NAME WHERE expr
+{  emit_delete($3);}
 | DISPLAY NAME USING '(' FILENAME ')' opt_limit
 {  emit_display($2, $5);}
 | SHOW TABLES 
 {  emit_show_tables();}
-| DESCRIBE NAME 
-{  emit_describe_table($2);}
 | DROP TABLE NAME 
-{  emit_drop_table($3);}
-;
+{  emit_drop_table($3);};
 
 
 expr:
@@ -258,8 +255,6 @@ expr IS BOOL1 { emit("ISBOOL %d", $3); }
 | expr IS NOT BOOL1 { emit("ISBOOL %d", $4); emit("NOT"); }
 ;
 
-
-
 opt_group_list: { /* nil */
     $$ = 0;
 }
@@ -288,9 +283,6 @@ opt_val_list: { /* nil */
 
 opt_where:
 BY expr { emit("FILTER BY"); };
-
-del_where:
-WHERE expr { emit("DELETE"); };
 
 
 join_list:
@@ -484,9 +476,7 @@ void emit_cmp(int val)
 }
 
 void emit(char *s, ...)
-{
-
-
+{	
 }
 
 void emit_var(char *s, int c, char *f, char* ref, char* ref_name)
@@ -1033,6 +1023,7 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
     bool str_join = 0;    
     size_t rcount = 0, cnt_r;
 	unsigned int r_parts = calc_right_partition(left, right, op_sel);
+	//cout << "partitioned to " << r_parts << endl;
 	unsigned int start_part = 0;
     queue<string> cc;
 	
@@ -1068,7 +1059,7 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
 	    bool rsz = 1;
 		right->deAllocOnDevice();		
 
-		//cout << "ordering " << endl;
+		//cout << "loading " << start_part << " " << r_parts << endl;
 		//if(right->not_compressed)
 			//order_inplace_host(right, exe_type, field_names, 0);						
 		//cout << "ordered " << endl;
@@ -1081,6 +1072,8 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
 			cnt_r = load_right(right, colname2, f2, op_g1, op_sel, op_alt, decimal_join, str_join, rcount, start_part, start_part+r_parts, rsz);
 			start_part = start_part+r_parts;			
 		};			
+		
+		//cout << "loaded " << endl;
 		
 		if(right->not_compressed && getFreeMem() < right->mRecCount*max_char(right)*2) {
 			right->CopyToHost(0, right->mRecCount);
@@ -1097,6 +1090,7 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
 				order_inplace(right, exe_type, field_names, 1);					
 			};	
 		};
+		//cout << "ordered " << endl;
 		
 
 		for (unsigned int i = 0; i < left->segCount; i++) {
@@ -1171,7 +1165,7 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
 					if(verbose)
 						cout << "No need of sorting " << endl;
 					
-				//cout << "join " << cnt_l << ":" << cnt_r << " " << join_type.front() << endl;
+				cout << "join " << cnt_l << ":" << cnt_r << " " << join_type.front() << endl;
 				//cout << "SZ " << left->d_columns_int[colname1].size() << endl;
 					
 				
@@ -1223,7 +1217,7 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
 									mgpu::less<int_type>(), *context);
 				};
 				
-				//cout << "RES " << res_count << " seg " << i << endl;
+				cout << "RES " << res_count << " seg " << i << endl;
 				
 				int* r1 = aIndicesDevice->get();
 				thrust::device_ptr<int> d_res1((int*)r1);
@@ -1276,7 +1270,7 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
 
 							if(right->d_columns_float[f4].size() == 0)
 								load_queue(rc, right, 0, f4, rcount, 0, right->segCount, 0, 0);
-
+								
 							thrust::device_ptr<float_type> d_tmp((float_type*)temp);
 							thrust::device_ptr<float_type> d_tmp1((float_type*)temp1);
 							thrust::gather_if(p_tmp.begin(), p_tmp.end(), p_tmp.begin(), left->d_columns_float[f3].begin(), d_tmp, is_positive<int>());
@@ -1295,11 +1289,12 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
 						};
 
 						if (join_kind == 'I') {  // result count changes only in case of an inner join
+							
 							unsigned int new_cnt = thrust::count(d_add, d_add+res_count, 1);
 							thrust::stable_partition(d_res2, d_res2 + res_count, d_add, thrust::identity<unsigned int>());
 							thrust::stable_partition(p_tmp.begin(), p_tmp.end(), d_add, thrust::identity<unsigned int>());
 							thrust::device_free(d_add);
-							res_count = new_cnt;
+							res_count = new_cnt;						
 						}
 						else { //otherwise we consider it a valid left join result with non-nulls on the left side and nulls on the right side
 							thrust::transform(d_res2, d_res2 + res_count, d_add , d_res2, set_minus());
@@ -1376,8 +1371,9 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
 								   left->decimal[op_sel1.front()])) && cmp_type == 0) && (op_sel1.front() != colname1) && left->not_compressed == 0) { // do the processing on host												
 								
 								void* h;	
-								unsigned int cnt, lower_val, bits;		
-
+								unsigned int cnt, bits;
+								int_type lower_val;								
+								
 								//if(verbose)
 								//	cout << "processing " << op_sel1.front() << " " << i << " " << cmp_type << endl;
 								
@@ -1410,7 +1406,7 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
 								};	
 								
 								cnt = ((unsigned int*)h)[0];
-								lower_val = ((unsigned int*)h)[1];
+								lower_val = ((int_type*)(((unsigned int*)h)+1))[0];
 								bits = ((unsigned int*)((char*)h + cnt))[8];	
 								//cout << cnt << " " << lower_val << " " << bits << endl;																
 			
@@ -2112,10 +2108,10 @@ void emit_insert(char *f, char* s) {
     statement_count++;
     if (scan_state == 0) {
         if (stat.find(f) == stat.end() && data_dict.count(f) == 0) {
-            process_error(2, "Delete : couldn't find variable " + string(f));
+            process_error(2, "Insert : couldn't find variable " + string(f));
         };
         if (stat.find(s) == stat.end() && data_dict.count(s) == 0) {
-            process_error(2, "Delete : couldn't find variable " + string(s) );
+            process_error(2, "Insert : couldn't find variable " + string(s) );
         };		
 		check_used_vars();			
         stat[f] = statement_count;
@@ -2137,6 +2133,12 @@ void emit_insert(char *f, char* s) {
 
 
 };
+
+void emit_mulite(char *f)
+{
+
+};
+
 
 void emit_delete(char *f)
 {
@@ -2548,12 +2550,16 @@ void emit_describe_table(char* table_name)
 void yyerror(char *s, ...)
 {
     extern int yylineno;
-    va_list ap;
-    va_start(ap, s);
+	extern char *yytext;
+    //va_list ap;
+    //va_start(ap, s);	
 
     fprintf(stderr, "%d: error: ", yylineno);
-    vfprintf(stderr, s, ap);
-    fprintf(stderr, "\n");
+	cout << yytext << endl;
+    //vfprintf(stderr, s, ap);
+    //fprintf(stderr, "\n");
+	
+	
 }
 
 void clean_queues()
