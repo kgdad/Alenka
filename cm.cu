@@ -3481,6 +3481,7 @@ void save_col_data(map<string, map<string, col_data> >& data_dict, string file_n
 
 void load_col_data(map<string, map<string, col_data> >& data_dict, string file_name)
 {
+	cout << "load_col_data->start" << endl;
 	size_t str_len, recs, len1;
 	string str1, str2;
 	char buffer[4000];
@@ -3507,10 +3508,10 @@ void load_col_data(map<string, map<string, col_data> >& data_dict, string file_n
 			};
 		};	
 		binary_file.close();	
-	}
-	else {
+	} else {
 		cout << "Coudn't open data dictionary" << endl;
 	};	
+	cout << "load_col_data->end" << endl;
 }
 
 bool var_exists(CudaSet* a, string name) {

@@ -6,6 +6,7 @@
 #include <string>
 #include <iostream>
 #include <ctime>
+#include <vector>
 
 
 using namespace std;
@@ -13,9 +14,9 @@ using namespace std;
 
 int main(int ac, char **av)
 {
+    cout << "main->start" << endl;
     std::clock_t start;
     int x;
-
 
     // test QPS via alenkaExecute	-- this section is the only C++ dependency
     if (string(av[1]) == "--QPS-test") {
@@ -32,9 +33,9 @@ int main(int ac, char **av)
             cout << "Usage : alenka [--QPS-test] | [ [-l process_count] [-v] script.sql ]" << endl;
             exit(1);
         }
-        else
-	    return execute_file( ac, av) ;
+        else {
+        	return execute_file( ac, av) ;
+        }
+
     }
 }
-
-

@@ -11,4 +11,4 @@ F := SELECT o_orderkey AS o_orderkey1, o_orderdate AS orderdate1, o_shippriority
  	 GROUP BY o_orderkey, o_orderdate, o_shippriority;	
 	  
 RES := ORDER F BY sum_revenue DESC, orderdate1 ASC;	   
-DISPLAY RES USING ('|') LIMIT 10;	
+DISPLAY RES USING ('|') LIMIT 10;

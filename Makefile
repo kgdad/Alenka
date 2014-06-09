@@ -2,15 +2,15 @@ alenka : bison.o merge.o \
          MurmurHash2_64.o filter.o \
 		 strings_filter.o strings_join.o strings_sort_host.o strings_sort_device.o \
 		 select.o zone_map.o atof.o cm.o jdbc.o mgpucontext.o callbacks.o main.o
-	nvcc -O3 -arch=sm_20 -L . mgpucontext.o mgpuutil.o -o alenka bison.o merge.o \
+	nvcc -O3 -arch=sm_30 -L . mgpucontext.o mgpuutil.o -o alenka bison.o merge.o \
 		 MurmurHash2_64.o filter.o \
 		 strings_filter.o strings_join.o strings_sort_host.o strings_sort_device.o \
 		 select.o zone_map.o atof.o cm.o jdbc.o\
 		 callbacks.o main.o
-	nvcc -m64 --compiler-options '-fPIC' -o libAlenka.so --shared *.o -arch sm_20
+	nvcc -m64 --compiler-options '-fPIC' -o libAlenka.so --shared *.o -arch sm_30
 		 
 
-nvcc = nvcc -I moderngpu-master/include/ --machine 64 -O3 --compiler-options '-fPIC' -arch=sm_20 -c
+nvcc = nvcc -I moderngpu-master/include/ --machine 64 -O3 --compiler-options '-fPIC' -arch=sm_30 -c
 
 callbacks.o : callbacks.c callbacks.h
 	$(nvcc) callbacks.c

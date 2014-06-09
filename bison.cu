@@ -137,7 +137,7 @@
 
 /* Enabling traces.  */
 #ifndef YYDEBUG
-# define YYDEBUG 0
+# define YYDEBUG 1
 #endif
 
 /* Enabling verbose error messages.  */
@@ -4813,6 +4813,7 @@ void load_vars()
 
 int execute_file(int ac, char **av)
 {
+	cout << "execute_file->start" << endl;
 bool just_once  = 0;
 string script;
 
@@ -5045,7 +5046,11 @@ void alenkaClose()
 
 extern "C"
 int alenka_JDBC(char *s) {
+		//turn on debugging
+		verbose = 1;
+
         //Load the data dictionary
+
         load_col_data(data_dict, "data.dictionary");
 
         //Read the SQL into internal buffers
