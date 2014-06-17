@@ -25,9 +25,8 @@ int JDBC::getColumnCount() {
 
 void JDBC::getColumnNames(char** colNames) {
 	for (size_t i = 0; i < cudaSet->columnNames.size(); i++) {
-		//colNames[i] = new char[cudaSet->columnNames[i].size() +1];
 		strcpy(colNames[i], cudaSet->columnNames[i].c_str());
-		cout << colNames[i] << endl;
+		//cout << colNames[i] << endl;
 	}
 }
 ;
@@ -99,23 +98,41 @@ double JDBC::retrieveFloat(int rowNum, int colNum) {
 	}
 	return (cudaSet->h_columns_float[cudaSet->columnNames[colNum]])[rowNum];
 }
-
-void JDBC::retrieveRow(int rowNum) {
-	//for now success is printing out the column names and the next row of data
-	cout << "Retrieving the row from the cudaset" << endl;
-	for (unsigned int i = 0; i < cudaSet->columnNames.size(); i++) {
-		if (cudaSet->type[cudaSet->columnNames[i]] == 0)
-			cout << cudaSet->h_columns_int[cudaSet->columnNames[i]][rowNum];
-		else if (cudaSet->type[cudaSet->columnNames[i]] == 1)
-			cout << cudaSet->h_columns_float[cudaSet->columnNames[i]][rowNum];
-		else
-			cout
-					<< cudaSet->h_columns_char[cudaSet->columnNames[i]]
-							+ (i * cudaSet->char_size[cudaSet->columnNames[i]]), cudaSet->char_size[cudaSet->columnNames[i]];
-
-		cout << "  |  ";
-	}
-
-	cout << endl;
-}
 ;
+
+//required functions from bison.cu
+extern bool scan_state;
+extern void process_error(int, string);
+extern void clean_queues();
+
+/*
+ * Is used to initialize the resultset and prepare what we need to iterate through the results.
+ * Passed in string is the name of the variable that we need the result set for.  Probably
+ * not the best way but should work for now.
+*/
+extern "C" CudaSet* initializeResultSet_JDBC(char *f) {
+        //Can only get the resultset if we are in scan_state 1
+        if (scan_state == 0) {
+                process_error(1, "Unable to get resultset in current scan_state");
+                return NULL;
+        }
+
+        if(varNames.find(f) == varNames.end()) {
+                process_error(1, "Unable to find CudaSet");
+                clean_queues();
+                return NULL;
+        }
+
+        CudaSet* cs = varNames.find(f)->second;
+        cout << "Found CudaSet for variable " << f << endl;
+        return cs;
+}
+
+extern "C" void resultSetClose_JDBC() {
+        //Clean Up variables
+        for (map<string, CudaSet*>::iterator it = varNames.begin();
+                        it != varNames.end(); ++it) {
+                (*it).second->free();
+        };
+        varNames.clear();
+}

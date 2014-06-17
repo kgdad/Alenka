@@ -57,6 +57,7 @@ queue<int_type> op_nums;
 queue<float_type> op_nums_f;
 queue<string> col_aliases;
 map<string, map<string, col_data> > data_dict;
+string data_dir;
 
 map<string, char*> buffers;
 map<string, size_t> buffer_sizes;
@@ -308,6 +309,7 @@ void CudaSet::decompress_char_hash(string colname, unsigned int segment)
     string f1 = load_file_name + "." + colname + "." + int_to_string(segment);
 
     FILE* f;
+    cout << "decompress_char_hash->Reading file: " << f1.c_str() << endl;
     f = fopen (f1.c_str() , "rb" );
     fread(&sz, 4, 1, f);
     char* d_array = new char[sz*len];
@@ -496,6 +498,7 @@ void CudaSet::resize(size_t addRecs)
 void CudaSet::reserve(size_t Recs)
 {
 
+	cout << "reserve->Recs size" << Recs << endl;
     for(unsigned int i=0; i < columnNames.size(); i++) {
         if(type[columnNames[i]] == 0)
             h_columns_int[columnNames[i]].reserve(Recs);
@@ -667,6 +670,7 @@ void CudaSet::readSegmentsFromFile(unsigned int segNum, string colname, size_t o
 	
 	if(interactive) { //check if data are in buffers
 		if(buffers.find(f1) == buffers.end()) { // add data to buffers		
+			cout << "readSeqmentsFromFile->(interactive)Reading file: " << f1.c_str() << endl;
 			FILE* f = fopen(f1.c_str(), "rb" );
 			if(f == NULL) {
 				process_error(3, "Error opening " + string(f1) +" file " );
@@ -674,6 +678,7 @@ void CudaSet::readSegmentsFromFile(unsigned int segNum, string colname, size_t o
 			fseek(f, 0, SEEK_END);
 			long fileSize = ftell(f);
 			while(total_buffer_size + fileSize > getTotalSystemMemory() && !buffer_names.empty()) { //free some buffers
+				cout << "readSeqmentsFromFile->Freeing some memory" << endl;
 				delete [] buffers[buffer_names.front()];
 				total_buffer_size = total_buffer_size - buffer_sizes[buffer_names.front()];
 				buffer_sizes.erase(buffer_names.front());
@@ -709,7 +714,7 @@ void CudaSet::readSegmentsFromFile(unsigned int segNum, string colname, size_t o
 		};	
 	}
 	else {
-
+		cout << "decompress_char_hash->Reading file: " << f1.c_str() << endl;
 		FILE* f = fopen(f1.c_str(), "rb" );
 		if(f == NULL) {
 			cout << "Error opening " << f1 << " file " << endl;
@@ -938,6 +943,7 @@ void CudaSet::CopyColumnToGpu(string colname) // copy all segments
 		size_t cnt = 0;
         for(unsigned int i = 0; i < segCount; i++) {
 
+        	cout << "CopyColumnToGpu->Processing compressed segments" << endl;
             readSegmentsFromFile(i,colname, cnt);
 
             if(type[colname] == 0) {
@@ -1846,6 +1852,7 @@ bool CudaSet::LoadBigFile(FILE* file_p)
 	string colname;
     char *p,*t;
 	const char* sep = separator.c_str();
+	cout << "LoadBigFile" << endl;
 
     map<unsigned int,string> col_map;
     for(unsigned int i = 0; i < mColumnCount; i++) {
@@ -2348,6 +2355,7 @@ void CudaSet::initialize(queue<string> &nameRef, queue<string> &typeRef, queue<i
     load_file_name = file_name;
 
     f1 = file_name + ".sort";
+    cout << "initialize->Reading file: " << f1.c_str() << endl;
     f = fopen (f1.c_str() , "rb" );
     if(f != NULL) {
         unsigned int sz, idx;
@@ -2364,6 +2372,7 @@ void CudaSet::initialize(queue<string> &nameRef, queue<string> &typeRef, queue<i
     };
 
     f1 = file_name + ".presort";
+    cout << "initialize->Reading file: " << f1.c_str() << endl;
     f = fopen (f1.c_str() , "rb" );
     if(f != NULL) {
         unsigned int sz, idx;
@@ -2393,7 +2402,8 @@ void CudaSet::initialize(queue<string> &nameRef, queue<string> &typeRef, queue<i
         cols[nameRef.front()] = colsRef.front();
 
 		if (((typeRef.front()).compare("decimal") == 0) || ((typeRef.front()).compare("int") == 0)) {
-			f1 = file_name + "." + nameRef.front() + ".0";		
+			f1 = file_name + "." + nameRef.front() + ".0";
+			cout << "initialize->Reading file: " << f1.c_str() << endl;
 			f = fopen (f1.c_str() , "rb" );
 			for(unsigned int j = 0; j < 6; j++)
 				fread((char *)&cnt, 4, 1, f);
@@ -2403,6 +2413,7 @@ void CudaSet::initialize(queue<string> &nameRef, queue<string> &typeRef, queue<i
 		
 		//check the references
 		f1 = file_name + "." + nameRef.front() + ".refs";
+		cout << "initialize->Reading file: " << f1.c_str() << endl;
 		f = fopen (f1.c_str() , "rb" );
 		if(f != NULL) {					
 			unsigned int len;

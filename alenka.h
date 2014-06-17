@@ -45,9 +45,3 @@ void alenkaClose();
 
 // or:
 int execute_file(int ac, char **av);
-
-//jdbc calls
-int alenka_JDBC(char *s);
-CudaSet* initializeResultSet_JDBC(char *f);
-void resultSetClose_JDBC();
-

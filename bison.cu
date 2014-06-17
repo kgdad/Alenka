@@ -4843,7 +4843,10 @@ string script;
             just_once = 1;
 			interactive = 1;
 			script = av[i+1];
-        };		
+        } else if(strcmp(av[i], "-d") == 0) {
+        	data_dir = av[i+1];
+        	cout << "Using " << data_dir << " as the data directory" << endl;
+        };
     };
 
 	load_col_data(data_dict, "data.dictionary");
@@ -5051,17 +5054,16 @@ void alenkaClose()
                 cudaFree(alloced_tmp);
 }
 
+
 extern "C"
 int alenka_JDBC(char *s) {
 		//turn on debugging
 		verbose = 1;
 
+		YY_BUFFER_STATE bp;
+
         //Load the data dictionary
-
         load_col_data(data_dict, "data.dictionary");
-
-        //Read the SQL into internal buffers
-        yy_scan_string(s);
 
         //initialize variables
         hash_seed = 100;
@@ -5069,9 +5071,13 @@ int alenka_JDBC(char *s) {
         statement_count = 0;
         clean_queues();
 
+        //Read the SQL into internal buffers
+        bp = yy_scan_string(s);
+        yy_switch_to_buffer(bp);
+
         //Parse the query
         if (yyparse()) {
-                printf("SQL scan parse failed \n");
+                cout << "SQL scan parse failed" << endl;
                 return 1;
         };
 
@@ -5081,14 +5087,17 @@ int alenka_JDBC(char *s) {
         statement_count = 0;
         clean_queues();
 
-        yy_scan_string(s);
+        bp = yy_scan_string(s);
+        yy_switch_to_buffer(bp);
         std::clock_t start1 = std::clock();
 
         //Excecute Query
         if (yyparse()) {
-                printf("SQL scan parse failed \n");
+                cout << "SQL scan parse failed" << endl;
                 return 1;
         }
+
+        yy_delete_buffer(bp);
 
         if (verbose) {
                 cout << "cycle time "
@@ -5096,38 +5105,6 @@ int alenka_JDBC(char *s) {
         };
 
         return 0;
-}
-
-/*
- * Is use to initialize the resultset and prepare what we need to iterate through the results.
- * Passed in string is the name of the variable that we need the result set for.  Probably
- * not the best way but should work for now.
-*/
-extern "C" CudaSet* initializeResultSet_JDBC(char *f) {
-        //Can only get the resultset if we are in scan_state 1
-        if (scan_state == 0) {
-                process_error(1, "Unable to get resultset in current scan_state");
-                return NULL;
-        }
-
-        if(varNames.find(f) == varNames.end()) {
-                process_error(1, "Unable to find CudaSet");
-                clean_queues();
-                return NULL;
-        }
-
-        CudaSet* cs = varNames.find(f)->second;
-        cout << "Found CudaSet for variable " << f << endl;
-        return cs;
-}
-
-extern "C" void resultSetClose_JDBC() {
-        //Clean Up variables
-        for (map<string, CudaSet*>::iterator it = varNames.begin();
-                        it != varNames.end(); ++it) {
-                (*it).second->free();
-        };
-        varNames.clear();
 }
 
 

@@ -30,7 +30,7 @@ int main(int ac, char **av)
     }
     else {				// ordinary alenka file mode
         if (ac < 2) {
-            cout << "Usage : alenka [--QPS-test] | [ [-l process_count] [-v] script.sql ]" << endl;
+            cout << "Usage : alenka [--QPS-test] | [ [-l process_count] | [-d data_directory] | [-v] script.sql ]" << endl;
             exit(1);
         }
         else {

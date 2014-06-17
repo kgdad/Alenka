@@ -28,6 +28,7 @@ public:
 	JDBC(CudaSet* cs);
 	
 	int getRecordCount();
+	int connected();
 	int getColumnCount();
 	void getColumnNames(char** colNames);
 	void getColumnName(int colNum, char* colName);

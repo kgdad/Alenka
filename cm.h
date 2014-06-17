@@ -17,7 +17,6 @@
 #ifndef ADD_H_GUARD
 #define ADD_H_GUARD
 
-
 #include <thrust/device_vector.h>
 #include <thrust/sequence.h>
 #include <thrust/count.h>
@@ -96,6 +95,7 @@ extern unsigned long long int* raw_decomp;
 extern unsigned int raw_decomp_length;
 extern size_t alloced_sz;
 extern void* alloced_tmp;
+extern string data_dir;
 
 
 template<typename T>
