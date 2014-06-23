@@ -23,7 +23,7 @@ int main(int ac, char **av)
         alenkaInit(NULL);
         start = std::clock();
         for (x=0; x< 1000; x++)  {
-       	    alenkaExecute("A1 := SELECT  count(n_name) AS col1 FROM nation;\n DISPLAY A1 USING ('|');");
+            alenkaExecute("A1 := SELECT  count(n_name) AS col1 FROM nation;\n DISPLAY A1 USING ('|');");
         }
         cout<< "Ave QPS is : " <<  ( 1000/ (( std::clock() - start ) / (double)CLOCKS_PER_SEC )) << endl;
         alenkaClose();
