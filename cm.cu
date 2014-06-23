@@ -224,6 +224,10 @@ void filter_op(char *s, char *f, unsigned int segment);
 size_t getTotalSystemMemory();
 void process_error(int severity, string err);
 
+/**
+ Constructor with 7 arguments. 6 reference queues 2 of integer type 4 of string type. 1 size_t, 1 string, 1 unsigned int. 
+ The function stignature is followed by an intialization list
+**/
 CudaSet::CudaSet(queue<string> &nameRef, queue<string> &typeRef, queue<int> &sizeRef, queue<int> &colsRef, size_t Recs, queue<string> &references, queue<string> &references_names)
     : mColumnCount(0), mRecCount(0)
 {
@@ -236,6 +240,10 @@ CudaSet::CudaSet(queue<string> &nameRef, queue<string> &typeRef, queue<int> &siz
     fil_s = NULL;
 };
 
+/**
+ Constructor with 6 arguments. 4 reference queues 2 of integer type, 2 of type string. 1 size_t, 1 string, 1 unsigned int. 
+ The function stignature is followed by an intialization list
+**/
 CudaSet::CudaSet(queue<string> &nameRef, queue<string> &typeRef, queue<int> &sizeRef, queue<int> &colsRef, size_t Recs, string file_name, unsigned int max)
     : mColumnCount(0),  mRecCount(0)
 {
@@ -249,6 +257,9 @@ CudaSet::CudaSet(queue<string> &nameRef, queue<string> &typeRef, queue<int> &siz
     fil_s = NULL;
 };
 
+/**
+ Constructor with 2 arguments. Size_t and unsigned int variable. Used by filter opfilter and emit_select
+**/
 CudaSet::CudaSet(size_t RecordCount, unsigned int ColumnCount)
 {
     initialize(RecordCount, ColumnCount);
@@ -261,6 +272,9 @@ CudaSet::CudaSet(size_t RecordCount, unsigned int ColumnCount)
 };
 
 
+/** 
+Constructor with 4 arguments. Two Cudaset pointers and two queues of string datatype
+**/
 CudaSet::CudaSet(CudaSet* a, CudaSet* b, queue<string> op_sel, queue<string> op_sel_as)
 {
     initialize(a,b, op_sel, op_sel_as);
@@ -273,12 +287,20 @@ CudaSet::CudaSet(CudaSet* a, CudaSet* b, queue<string> op_sel, queue<string> op_
 };
 
 
+/** 
+Deconstructor 
+**/
 CudaSet::~CudaSet()
 {
     free();
 };
 
 
+/** 
+Resizing/allocating the apporiate space based off the type of column data and record count.
+If status of CudaStatus not equal to CudaSuccess Message gets printed to the screen Function called by AllocOnDevice and allocColumns.
+This function has two variables string 'colname and a size_t variable RecordCount
+**/ 
 void CudaSet::allocColumnOnDevice(string colname, size_t RecordCount)
 {
     if (type[colname] == 0) {
@@ -394,7 +416,9 @@ void CudaSet::decompress_char_hash(string colname, unsigned int segment)
 
 
 
-// takes a char column , hashes strings, copies them to a gpu
+/** 
+Takes a char column , hashes strings, copies them to a gpu. Calls murmurHash64A hash function. Function has two paraameters one string called field and an unsigned integer called segment.
+**/
 void CudaSet::add_hashed_strings(string field, unsigned int segment)
 {
     CudaSet *t;
@@ -443,6 +467,10 @@ void CudaSet::add_hashed_strings(string field, unsigned int segment)
 
 
 
+/** 
+resize_join resizes record count by adding new records to previous total based off datatype of column. This function has 1 argument called addRecs of size_t data type. This function is used by
+emit_multi-join 
+**/
 void CudaSet::resize_join(size_t addRecs)
 {
     mRecCount = mRecCount + addRecs;
@@ -471,6 +499,7 @@ void CudaSet::resize_join(size_t addRecs)
 };
 
 
+/** This fucntion is used to resize column record total.This function has 1 argument called addRecs of size_t data type.
 void CudaSet::resize(size_t addRecs)
 {
     mRecCount = mRecCount + addRecs;
@@ -537,6 +566,9 @@ void CudaSet::deAllocColumnOnDevice(string colname)
     };
 };
 
+/** Runs a loop that calls allocColumnOnDevice to allocate space on device based off of size of columnNames vector.
+size_t variable RecordCount is only parameter. 
+**/
 void CudaSet::allocOnDevice(size_t RecordCount)
 {
     for(unsigned int i=0; i < columnNames.size(); i++)
@@ -574,6 +606,10 @@ void CudaSet::deAllocOnDevice()
     };
 };
 
+/**
+ This function resizes columns on device based on type and column name. resizeDeviceColumn resizes by adding RecCount to mRecCount
+This function accetps two parameters as its arguments siz_t RecCount and a string colname
+**/
 void CudaSet::resizeDeviceColumn(size_t RecCount, string colname)
 {
     if (type[colname] == 0) {
@@ -594,6 +630,9 @@ void CudaSet::resizeDeviceColumn(size_t RecCount, string colname)
 
 
 
+/**
+resizeDevice is a function that is called to resize the records on the device. resizeDevice has one argument called ReCount of size_t
+**/
 void CudaSet::resizeDevice(size_t RecCount)
 {
     for(unsigned int i=0; i < columnNames.size(); i++) {
@@ -627,6 +666,9 @@ bool CudaSet::onDevice(string colname)
 
 
 
+/** copyDeviceStruct intilaizes a Cudaset Class object members. Depending on datatype of data (columns) in  vector columnNames 
+  hos _vector and device vectors are allocated on cpu and gpu. CudaSet varable is return from this function. This function is called by both emit_filter & emit_order.
+**/
 CudaSet* CudaSet::copyDeviceStruct()
 {
 
@@ -665,6 +707,11 @@ CudaSet* CudaSet::copyDeviceStruct()
 }
 
 
+/*
+ readSegmentsFromFile is reading segments one at a time from specific column. It has 3 parameters: an unsigned int segNum, a string colname, 
+a size_t variable called offset
+*/
+///TODO:offset
 void CudaSet::readSegmentsFromFile(unsigned int segNum, string colname, size_t offset)
 {
     string f1 = load_file_name + "." + colname + "." + int_to_string(segNum);;
@@ -969,6 +1016,10 @@ void CudaSet::CopyColumnToGpu(string colname) // copy all segments
     };
 }
 
+/**
+ The CopyColumnToHost  function copies columns from device to host based on type. This function accepts 3 arguments; 1 string type 
+and 2 size_t variables.
+**/
 void CudaSet::CopyColumnToHost(string colname, size_t offset, size_t RecCount)
 {
 
@@ -985,11 +1036,17 @@ void CudaSet::CopyColumnToHost(string colname, size_t offset, size_t RecCount)
 }
 
 
+/**
+This function calls CopyColumnToHost functions with two parameters. Function has one argument of string type.
+**/
 void CudaSet::CopyColumnToHost(string colname)
 {
     CopyColumnToHost(colname, 0, mRecCount);
 }
 
+/** 
+This function copies all columns to host with the column name in ColumnNames. Function has two arguments both of type size_t.
+**/
 void CudaSet::CopyToHost(size_t offset, size_t count)
 {
     for(unsigned int i = 0; i < columnNames.size(); i++) {
@@ -997,21 +1054,33 @@ void CudaSet::CopyToHost(size_t offset, size_t count)
     };
 }
 
+/**
+get_float_type_by_name passes device vector to kernal. Has one argument of string type.
+**/
 float_type* CudaSet::get_float_type_by_name(string name)
 {
     return thrust::raw_pointer_cast(d_columns_float[name].data());
 }
 
+/**
+get_int_by_name passes device vector to kernal. Has one argument of string type.
+**/
 int_type* CudaSet::get_int_by_name(string name)
 {
     return thrust::raw_pointer_cast(d_columns_int[name].data());
 }
 
+/**
+get_host_float_by_name passes host vector to kernal. Has one argument of string type.
+**/
 float_type* CudaSet::get_host_float_by_name(string name)
 {
     return thrust::raw_pointer_cast(h_columns_float[name].data());
 }
 
+/**
+get_host_int_by_name passes host vector to kernal. Has one argument of string type.
+**/
 int_type* CudaSet::get_host_int_by_name(string name)
 {
     return thrust::raw_pointer_cast(h_columns_int[name].data());
@@ -1019,6 +1088,9 @@ int_type* CudaSet::get_host_int_by_name(string name)
 
 
 
+/** 
+GroupBy functions allows column data to be displayed or stored in groupings. A stack of strings is this functions only argument
+**/ 
 void CudaSet::GroupBy(stack<string> columnRef)
 {
     if(grp)
@@ -1063,12 +1135,23 @@ void CudaSet::GroupBy(stack<string> columnRef)
 
 
 
+/**This function checks if  columns exist if not adds column to map d_columns_int in the form of vector, adds colname to end of ColumnName vector, 
+and allocates space on host if column already exist then it checks to see if map structure D_column_int needs to be resized.The column name, record count,
+ and int_type variable are parameters 
+**/
 void CudaSet::addDeviceColumn(int_type* col, string colname, size_t recCount)
 {
+    //Find string in columnNames vector = string in colname.
     if (std::find(columnNames.begin(), columnNames.end(), colname) == columnNames.end()) {
+		//add colname to columnNames vector 
         columnNames.push_back(colname);
+        //map type  assigns key colname to value 0 representing  int
         type[colname] = 0;
+        // Cuda vector  allocate device_vectors with recCount(amount) int_type  elements and
+        //assign to key colname of map<string, vector> d_columns
         d_columns_int[colname] = thrust::device_vector<int_type>(recCount);
+        // Allocated host_vector with uninitialized_host_allocator which avoids default construction 
+		//by getting rid of zero intialization of numeric data saving overhead on host
         h_columns_int[colname] = thrust::host_vector<int_type, uninitialized_host_allocator<int_type> >();
     }
     else {  // already exists, my need to resize it
@@ -1081,10 +1164,15 @@ void CudaSet::addDeviceColumn(int_type* col, string colname, size_t recCount)
     thrust::copy(d_col, d_col+recCount, d_columns_int[colname].begin());
 };
 
+/**This function checks if  columns exist if not adds column to map d_columns_int in the form of vector, adds colname to end of ColumnName vector,
+ and allocate space on host. If column already exist then it checks to see if map D_column_int needs to be resized. The column name, record count,
+  and float_type variable are parameters vector columnNames has a string colname if not adds it to vector and allocates int_type values in 
+**/
 void CudaSet::addDeviceColumn(float_type* col, string colname, size_t recCount, bool is_decimal)
 {
     if (std::find(columnNames.begin(), columnNames.end(), colname) == columnNames.end()) {
         columnNames.push_back(colname);
+	    //map type  assigns key colname to value 1 representing  float
         type[colname] = 1;
         d_columns_float[colname] = thrust::device_vector<float_type>(recCount);
         h_columns_float[colname] = thrust::host_vector<float_type, uninitialized_host_allocator<float_type> >();
@@ -1303,6 +1391,10 @@ void CudaSet::compress(string file_name, size_t offset, unsigned int check_type,
 }
 
 
+/**
+writeHeader functioin is called by store, insert, amd compress functions. writeHeader create a binary file based of the name of 
+the table file Alenka is working on. It then adds '.header' to end of filename.
+**/
 void CudaSet::writeHeader(string file_name, string colname, unsigned int tot_segs) {
     string str = file_name + "." + colname;
     string ff = str;
@@ -1370,6 +1462,10 @@ void CudaSet::writeSortHeader(string file_name)
 
 using namespace mgpu;
 
+/**
+Display function is called by emit_display. This function displays the table/result of query in a dilimited format to the screen. It also prints out small
+details above table like record count. This function acccepts 3 parameters giving to it by emit_display.
+**/
 void CudaSet::Display(unsigned int limit, bool binary, bool term)
 {
 #define MAXCOLS 128
@@ -1475,6 +1571,11 @@ void CudaSet::Display(unsigned int limit, bool binary, bool term)
     };      // end else
 }
 
+///
+/** This function stores user varaible into text file using the dilimeter specified. The function is called by emit_store or emit_store_binary depending 
+on specific command. This function accpets 5 parameters 4 of which is giving to it by calling function. Store preforms different tasks depending on if 
+the data source is coming from a binary file or not. 
+**/ 
 void CudaSet::Store(string file_name, char* sep, unsigned int limit, bool binary, bool term)
 {
     if (mRecCount == 0 && binary == 1 && !term) { // write tails
@@ -1842,6 +1943,7 @@ void CudaSet::compress_char(string file_name, string colname, size_t mCount, siz
 };
 
 
+/// LoadBigFile is called by emit_load_binary when source is text file
 
 bool CudaSet::LoadBigFile(FILE* file_p)
 {
@@ -1981,6 +2083,10 @@ bool* CudaSet::logical_or(bool* column1, bool* column2)
 
 
 
+/**This function compares two int_type variables based off the op_type value
+it returns a pointer to a boolean.The result creates a vector of 1's or 0's to
+represent the result and store it on a stack.
+**/
 bool* CudaSet::compare(int_type s, int_type d, int_type op_type)
 {
     bool res;
@@ -2011,6 +2117,11 @@ bool* CudaSet::compare(int_type s, int_type d, int_type op_type)
 };
 
 
+/**This function compares two float_type variables based off the op_type value
+If the difference between the two floating point numbers is less the EPSILON(1.0E-8) they are treated as equal. The result creates
+ a vector of 1's or 0's to represent the result and store it on a stack.
+Function returns a pointer to a boolean.
+**/
 bool* CudaSet::compare(float_type s, float_type d, int_type op_type)
 {
     bool res;
@@ -2041,6 +2152,11 @@ bool* CudaSet::compare(float_type s, float_type d, int_type op_type)
 }
 
 
+/**This function compares two int_type variables one represnting a column. 
+Based off the op_type value a vector get get a series of 1s and 0s for true 
+or false respectivly. The results create a vector of 1's or 0's to represent the result and store it on a stack.
+Function returns a pointer to a boolean.
+**/
 bool* CudaSet::compare(int_type* column1, int_type d, int_type op_type)
 {
     thrust::device_ptr<bool> temp = thrust::device_malloc<bool>(mRecCount);
@@ -2064,6 +2180,11 @@ bool* CudaSet::compare(int_type* column1, int_type d, int_type op_type)
 
 }
 
+/**This function compares two float_type variables one represnting a column. 
+Based off the op_type value a vector get get a series of 1s and 0s for true  or false respectivly.
+The result is stored on a stack.
+Function returns a pointer to a boolean.
+**/
 bool* CudaSet::compare(float_type* column1, float_type d, int_type op_type)
 {
     thrust::device_ptr<bool> res = thrust::device_malloc<bool>(mRecCount);
@@ -2085,6 +2206,11 @@ bool* CudaSet::compare(float_type* column1, float_type d, int_type op_type)
     return thrust::raw_pointer_cast(res);
 }
 
+/**This function compares two int_type variables both represnting a column. 
+Based off the op_type value a vector gets a series of 1s and 0s for true or false respectivly
+the result is stored on a stack.
+Function returns a pointer to a boolean.
+**/
 
 bool* CudaSet::compare(int_type* column1, int_type* column2, int_type op_type)
 {
@@ -2108,6 +2234,11 @@ bool* CudaSet::compare(int_type* column1, int_type* column2, int_type op_type)
     return thrust::raw_pointer_cast(temp);
 }
 
+/**This function compares two float_type variables both represnting a column. 
+Based off the op_type value a vector gets a series of 1s and 0s for true or false respectivly
+the result is stored on a stack.
+Function returns a pointer to a boolean.
+**/
 bool* CudaSet::compare(float_type* column1, float_type* column2, int_type op_type)
 {
     thrust::device_ptr<float_type> dev_ptr1(column1);
@@ -2132,6 +2263,11 @@ bool* CudaSet::compare(float_type* column1, float_type* column2, int_type op_typ
 }
 
 
+/**This function compares a float_type and int_type variable, both represnting a column. 
+Based off the op_type value a vector gets a series of 1s and 0s for true or false respectivly
+the result is stored on a stack.
+Function returns a pointer to a boolean.
+**/
 bool* CudaSet::compare(float_type* column1, int_type* column2, int_type op_type)
 {
     thrust::device_ptr<float_type> dev_ptr1(column1);
@@ -2159,6 +2295,10 @@ bool* CudaSet::compare(float_type* column1, int_type* column2, int_type op_type)
 }
 
 
+/** 
+This op function does math operations on int_type and float_type columns and return a  raw float_type pointer to the result. Its parameters list is 1 int_type, 1 float_type, 1 string
+and 1 interger. 
+**/
 float_type* CudaSet::op(int_type* column1, float_type* column2, string op_type, int reverse)
 {
 
@@ -2198,6 +2338,10 @@ float_type* CudaSet::op(int_type* column1, float_type* column2, string op_type, 
 
 
 
+/** 
+This op function does math operations on 2 integer_type columns and return a  raw int_type pointer to the result. Its parameters list is 1 int_type, 1 float_type, 1 string
+and 1 interger. 
+**/
 int_type* CudaSet::op(int_type* column1, int_type* column2, string op_type, int reverse)
 {
 
@@ -2230,6 +2374,10 @@ int_type* CudaSet::op(int_type* column1, int_type* column2, string op_type, int 
 
 }
 
+/** 
+This op function does math operations on 2 float_type columns and return a  raw float_type pointer to the result. Its parameters list is 1 int_type, 1 float_type, 1 string
+and 1 interger. 
+**/
 float_type* CudaSet::op(float_type* column1, float_type* column2, string op_type, int reverse)
 {
 
@@ -2260,6 +2408,10 @@ float_type* CudaSet::op(float_type* column1, float_type* column2, string op_type
     return thrust::raw_pointer_cast(temp);
 }
 
+/** 
+This op function does math operations on int_type columns and a int_type variable. It returns a  raw float_type pointer to the result. Its parameters list is 1 int_type, 1 float_type, 1 string
+and 1 interger. 
+**/
 int_type* CudaSet::op(int_type* column1, int_type d, string op_type, int reverse)
 {
     thrust::device_ptr<int_type> temp = thrust::device_malloc<int_type>(mRecCount);
@@ -2290,6 +2442,10 @@ int_type* CudaSet::op(int_type* column1, int_type d, string op_type, int reverse
     return thrust::raw_pointer_cast(temp);
 }
 
+/** 
+This op function does math operations on int_type and float_type varaible. It returns a  raw float_type pointer to the result. Its parameters list is 1 int_type, 1 float_type, 1 string
+and 1 interger. 
+**/
 float_type* CudaSet::op(int_type* column1, float_type d, string op_type, int reverse)
 {
     thrust::device_ptr<float_type> temp = thrust::device_malloc<float_type>(mRecCount);
@@ -2325,6 +2481,10 @@ float_type* CudaSet::op(int_type* column1, float_type d, string op_type, int rev
 }
 
 
+/** 
+This op function does math operations on float_type columns and a float_type variable. It returns a  raw float_type pointer to the result. Its parameters list is 1 int_type, 1 float_type, 1 string
+and 1 interger. 
+**/
 float_type* CudaSet::op(float_type* column1, float_type d, string op_type,int reverse)
 {
     thrust::device_ptr<float_type> temp = thrust::device_malloc<float_type>(mRecCount);
@@ -2360,6 +2520,9 @@ float_type* CudaSet::op(float_type* column1, float_type d, string op_type,int re
 
 
 
+/**
+ Initialize CudaSet Class Objects and queues reference variables along with file name 
+**/
 void CudaSet::initialize(queue<string> &nameRef, queue<string> &typeRef, queue<int> &sizeRef, queue<int> &colsRef, size_t Recs, string file_name) // compressed data for DIM tables
 {
     mColumnCount = (unsigned int)nameRef.size();
@@ -2510,6 +2673,9 @@ void CudaSet::initialize(queue<string> &nameRef, queue<string> &typeRef, queue<i
 
 
 
+/**
+ Initializes CudaSet Class Objects and queues reference variables
+**/
 void CudaSet::initialize(queue<string> &nameRef, queue<string> &typeRef, queue<int> &sizeRef, queue<int> &colsRef, size_t Recs, queue<string> &references, queue<string> &references_names)
 {
     mColumnCount = (unsigned int)nameRef.size();
@@ -2565,6 +2731,9 @@ void CudaSet::initialize(queue<string> &nameRef, queue<string> &typeRef, queue<i
     };
 };
 
+/**
+ Initialize CudaSet Class Objects
+**/
 void CudaSet::initialize(size_t RecordCount, unsigned int ColumnCount)
 {
     mRecCount = RecordCount;
@@ -2577,6 +2746,9 @@ void CudaSet::initialize(size_t RecordCount, unsigned int ColumnCount)
 
 
 
+/**
+ Initialize CudaSet Class Objects
+**/
 void CudaSet::initialize(CudaSet* a, CudaSet* b, queue<string> op_sel, queue<string> op_sel_as)
 {
     mRecCount = 0;
@@ -2667,6 +2839,9 @@ int_type reverse_op(int_type op_type)
 }
 
 
+/**
+getFreeMem function calls cudaMemGetInfo and returns available space.
+**/
 size_t getFreeMem()
 {
     size_t available, total;
@@ -2676,6 +2851,10 @@ size_t getFreeMem()
 
 
 
+/** 
+allocColumns is called by emit_select. load_queue, and Store functions. This function checks if memory is allocated on the device for columns in fields if not it allocates it.
+This function has two arguments CudaSet variable 'a' and a queue of strings called 'fields'
+**/
 void allocColumns(CudaSet* a, queue<string> fields)
 {
     if(a->filtered) {
@@ -2744,6 +2923,8 @@ void gatherColumns(CudaSet* a, CudaSet* t, string field, unsigned int segment, s
 }
 
 
+/** Function getSegementRecCount returns the record count for a giving segment. Two arguments in parameter list a CudaSet variable and an unsigned int segment
+**/
 size_t getSegmentRecCount(CudaSet* a, unsigned int segment) {
     if (segment == a->segCount-1) {
         return a->hostRecCount - a->maxRecs*segment;
@@ -2895,6 +3076,10 @@ void mycopy(string colname, CudaSet* a, CudaSet* t, size_t offset, size_t g_size
 
 
 
+/**
+The function load_queue loads variables into columnNames queue. Function returns record count of loadded column  
+**/
+/// TODO
 size_t load_queue(queue<string> c1, CudaSet* right, bool str_join, string f2, size_t &rcount,
                   unsigned int start_segment, unsigned int end_segment, bool rsz, bool flt)
 {
@@ -2982,6 +3167,9 @@ size_t max_char(CudaSet* a, queue<string> field_names)
 
 
 
+/** 
+max_tmp Finds the max size of largest column.
+**/
 size_t max_tmp(CudaSet* a)
 {
     size_t max_sz = 0;
@@ -3004,6 +3192,10 @@ size_t max_tmp(CudaSet* a)
 };
 
 
+/**
+setSegment is called by emit_select. This function determines the number of segments based off the size and number of records. setSegments has two arguments a CudaSet 
+varaible 'a' and a queue of string 'cols'. 
+**/
 void setSegments(CudaSet* a, queue<string> cols)
 {
     size_t mem_available = getFreeMem();
@@ -3115,6 +3307,8 @@ void filter_op(char *s, char *f, unsigned int segment)
 
 
 
+/**lod_right loads the column on the right side 
+**/
 size_t load_right(CudaSet* right, string colname, string f2, queue<string> op_g, queue<string> op_sel,
                   queue<string> op_alt, bool decimal_join, bool& str_join,
                   size_t& rcount, unsigned int start_seg, unsigned int end_seg, bool rsz) {
@@ -3248,6 +3442,11 @@ string int_to_string(int number) {
     return number_string;
 }
 
+/**
+ insert_records is called by the function emit_insert. insert_records checks to see if table user want to insert into and information to insert exsit if 
+ it does not the function prints couldnt find ____. Depending on whether the data is on the disk or in memeory the process to do this happens differently.
+  This function execpts two char arrays.
+**/ 
 
 void insert_records(char* f, char* s) {
     char buf[4096];
@@ -3344,6 +3543,9 @@ void insert_records(char* f, char* s) {
 
 
 
+/** 
+delete_records  is called by the emit_delete function.
+**/
 void delete_records(char* f) {
 
     CudaSet *a;
@@ -3575,6 +3777,10 @@ void save_col_data(map<string, map<string, col_data> >& data_dict, string file_n
     binary_file.close();
 }
 
+/**The function load_col_data reads a binary data dictionary file from directory to get table name, column name, column type, 
+and length. It then stores information into map sturcture data_dict. It has two parameters a map for storing file data and 
+string for file name. If file could'nt be open a message is printed to screen. Function called by execute_files.
+**/ 
 void load_col_data(map<string, map<string, col_data> >& data_dict, string file_name)
 {
     size_t str_len, recs, len1;
@@ -3610,6 +3816,10 @@ void load_col_data(map<string, map<string, col_data> >& data_dict, string file_n
 	cout << "load_col_data->end" << endl;
 }
 
+/**
+The function var_exists searches columnNames for string name if it finds name it returns 1 for true if not it return 0. This function 
+accepts to arguments a CudaSet pointer and a string
+**/
 bool var_exists(CudaSet* a, string name) {
 
     if(std::find(a->columnNames.begin(), a->columnNames.end(), name) !=  a->columnNames.end())

@@ -42,6 +42,10 @@
    define necessary library symbols; they are noted "INFRINGES ON
    USER NAME SPACE" below.  */
 
+/** All of the code in bison is related to the tokens, and token definations for the Flex parser to collect upon input of the syntax defined.
+In the Alenka program  Bison uses a function called excute_files as the main controlling of the program execution. Like all programs that use bison and flex 
+the yyparse function is used as the scanner. yyparse is defind in this file.
+**/
 /* Identify Bison output.  */
 #define YYBISON 1
 
@@ -72,6 +76,8 @@
 
 
 
+/** C/C++ Declarations of functions
+**/
 #include "lex.yy.c"
 #include "cm.h"
 
@@ -2563,6 +2569,9 @@ ContextPtr context;
 void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_name);
 void filter_op(char *s, char *f, unsigned int segment);
 
+/** The check_used_vars() function allows Alenka to check and see whether the input the user entered was actually vaild alenka variables ie table names & columns within
+data.dictionary.It iterates through data.dict map structure to figure out if any variables match table and/or column names. This has empty parameter list
+**/
 void check_used_vars()
 {
     for (map<string, map<string, col_data> >::iterator it=data_dict.begin() ; it != data_dict.end(); ++it ) {
@@ -2579,18 +2588,28 @@ void check_used_vars()
 }
 
 
+/** 
+ This function pushses NAME on to op_type queue and its assocaited value on to op_value queue
+**/
 void emit_name(char *name)
 {
     op_type.push("NAME");
     op_value.push(name);
 }
 
+/** 
+ This function is called when the keyword 'LIMIT'is parsed over. This function pushses LIMIT onto op_type queue.back() 
+ The LIMIT keyword is used along with others to limit the amout of data or records stroed/displayed
+ **/
 void emit_limit(int val)
 {
     op_nums.push(val);
 }
 
 
+/** 
+ This function pushses STRING on to op_type queue and its assocaited value on to op_value queue
+**/
 void emit_string(char *str)
 {   // remove the float_type quotes
     string sss(str,1, strlen(str)-2);
@@ -2599,18 +2618,27 @@ void emit_string(char *str)
 }
 
 
+/** 
+ This function pushses 'NUMBER' on to op_type queue and its assocaited value on to op_value queue
+**/
 void emit_number(int_type val)
 {
     op_type.push("NUMBER");
     op_nums.push(val);
 }
 
+/** 
+ This function pushses 'FLOAT' on to op_type queue and its assocaited value on to op_value queue
+**/
 void emit_float(float_type val)
 {
     op_type.push("FLOAT");
     op_nums_f.push(val);
 }
 
+/** 
+ This function pushses 'DECIMAL' on to op_type queue and its assocaited value on to op_value queue
+**/
 void emit_decimal(float_type val)
 {
     op_type.push("DECIMAL");
@@ -2619,16 +2647,25 @@ void emit_decimal(float_type val)
 
 
 
+/** 
+ This function is called when the keyword symbol '*'is parsed over in bewteen expressions. This function pushses MUL onto op_type queue 
+ **/
 void emit_mul()
 {
     op_type.push("MUL");
 }
 
+/** 
+ This function is called when the keyword symbol '+'is parsed over in bewteen expressions. This function pushses ADD onto op_type queue 
+ **/ 
 void emit_add()
 {
     op_type.push("ADD");
 }
 
+/** 
+emit_div() function is called when the keyword  symbol'/' is parsed over in bewteen expressions.  
+ **/
 void emit_div()
 {
     op_type.push("DIV");
@@ -2636,12 +2673,21 @@ void emit_div()
 
 unsigned int misses = 0;
 
+/**
+This function is called when the keyword 'AND'is parsed over. emit_and pushses AND onto op_type queue and increments join_col_cnt
+ by 1.
+**/
 void emit_and()
 {
     op_type.push("AND");
     join_col_cnt++;
 }
 
+/**
+This function is called when the keyword 'EQUAL'is parsed over. emit_and pushses JOIN onto op_type queue.back() If variable misses is equal to 0 join_and_cnt[tab_cnt] 
+to be join_col_cnt and increments tab_cnt by 1. Otherwise missess is decremented by 1
+ by 1.
+**/
 void emit_eq()
 {
     op_type.push("JOIN");
@@ -2656,38 +2702,60 @@ void emit_eq()
     }
 }
 
+/**
+This function is called when the keyword 'DISTINCT'is parsed over. emit_and pushses DISTINCT onto op_type queue and increments distinct_cnt
+ by 1.
+**/
 void emit_distinct()
 {
     op_type.push("DISTINCT");
     distinct_cnt++;
 }
 
+/**
+This function is called when the keyword 'JOIN' is parsed over.
 void emit_join()
 {
 
 }
 
 
+/** 
+emit_or() function is called when the keyword 'OR' is parsed over. This function pushses OR onto op_type queue 
+ **/
 void emit_or()
 {
     op_type.push("OR");
 }
 
 
+/** 
+ This function is called when the keyword '-'is parsed over in bewteen expressions. This function pushses MINUS onto op_type queue 
+ **/
 void emit_minus()
 {
     op_type.push("MINUS");
 }
 
+/** 
+emit_cmp is called when the keyword 'COMPARISON'is parsed over.This function pushses 'CMP' on to op_type queue and its assocaited value on to op_value queue.
+**/
 void emit_cmp(int val)
 {
     op_type.push("CMP");
     op_nums.push(val);
 }
 
+/** 
+emit function is used in multiple cases and instances of keywords.
+**/
 void emit(char *s, ...)
 {
 }
+/**
+emit_var is called when the parser encounters a column list dealing with colmns that are not of type char. Usually in Load command. This function
+pushes the apporiate variables onto the various queue structures 
+**/
 
 void emit_var(char *s, int c, char *f, char* ref, char* ref_name)
 {
@@ -2699,12 +2767,18 @@ void emit_var(char *s, int c, char *f, char* ref, char* ref_name)
     references_names.push(ref_name);
 }
 
+/** 
+emit_var_asc is called when the keyword 'ASC'is parsed over.This function pushses 'ASC' on to op_value queue and  the value of s to op_type.
+**/
 void emit_var_asc(char *s)
 {
     op_type.push(s);
     op_value.push("ASC");
 }
 
+/** 
+emit_var_desc is called when the keyword 'DESC'is parsed over.This function pushses 'DESC' on to op_value queue and  the value of s to op_type.
+**/
 void emit_var_desc(char *s)
 {
     op_type.push(s);
@@ -2723,6 +2797,10 @@ void emit_presort(char *s)
 }
 
 
+/**
+emit_varchar is called when the parser encounters a column list dealing with columns that are of type char. Usually in Load command. This function
+pushes the apporiate variables onto the various queue structures 
+**/
 void emit_varchar(char *s, int c, char *f, int d, char *ref, char* ref_name)
 {
     namevars.push(s);
@@ -2733,6 +2811,9 @@ void emit_varchar(char *s, int c, char *f, int d, char *ref, char* ref_name)
     references_names.push(ref_name);
 }
 
+/** 
+emit_sel_name is called when a '*', ',', and 'AS' keyword/symbols are used in an Alenka command.
+**/
 void emit_sel_name(char *s)
 {
     op_type.push("emit sel_name");
@@ -2740,32 +2821,50 @@ void emit_sel_name(char *s)
     sel_count++;
 }
 
+/**
+Pushes the keyword "COUNT" on the op_type queue to represent finding the count
+**/
 void emit_count()
 {
     op_type.push("COUNT");
 }
 
+/**
+Pushes the keyword "SUM" on the op_type queue to represent finding the sum
+**/
 void emit_sum()
 {
     op_type.push("SUM");
 }
 
 
+/**
+Pushes the keyword "AVG" on the op_type queue to represent finding he average
+**/
 void emit_average()
 {
     op_type.push("AVG");
 }
 
+/**
+Pushes the keyword "MIN" on the op_type queue to represent finding the minimum
+**/
 void emit_min()
 {
     op_type.push("MIN");
 }
 
+/**
+Pushes the keyword "MAX" on the op_type queue to represent find the maximum
+**/
 void emit_max()
 {
     op_type.push("MAX");
 }
 
+/**
+ emit_join_tab is called when a specific join is wanted like RIGHT OR LEFT join. This function pushes type of join specified onto join_type queue.
+**/
 void emit_join_tab(char *s, char tp)
 {
     op_join.push(s);
@@ -2773,7 +2872,10 @@ void emit_join_tab(char *s, char tp)
     join_type.push(tp);
 };
 
-void order_inplace_host(CudaSet* a, stack<string> exe_type, set<string> field_names, bool update_str)
+/**
+order_inplace changes the order of columns on device. This function accpets CudaSet pointer, stack of strings, set of strings and a boolean variable.
+**/
+void order_inplace(CudaSet* a, stack<string> exe_type, set<string> field_names, bool update_str)
 {
     unsigned int* permutation = new unsigned int[a->mRecCount];
     thrust::sequence(permutation, permutation + a->mRecCount);
@@ -2957,6 +3059,10 @@ void order_inplace(CudaSet* a, stack<string> exe_type, set<string> field_names, 
     thrust::device_free(permutation);
 }
 
+///
+/** 
+This function checks for star joins and pops them from op_vals queues when it finds them 
+**/
 bool check_star_join(string j1)
 {
     queue<string> op_vals(op_value);
@@ -2990,6 +3096,10 @@ std::ostream &operator<<(std::ostream &os, const uint2 &x)
 }
 
 
+/**
+ emit_join is called when a join_list is parsed over in a command. Function used to join. This version of emit_join has 3 parameters two char arrays and interger.
+ Function calls emit_multijoin when more then one join is needed
+**/  
 void emit_join(char *s, char *j1, int grp)
 {
     statement_count++;
@@ -3116,6 +3226,10 @@ void emit_join(char *s, char *j1, int grp)
 
 
 
+///
+/** 
+emit_multijoin is callled by emit_join when join_tab_cnt > 1. This function is use to join multiple tables.
+**/
 void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_name)
 {
 
@@ -3229,6 +3343,7 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
 
     bool str_join = 0;
     size_t rcount = 0, cnt_r;
+    //need to sort the entire dataset by a key before loading segment by segment
     unsigned int r_parts = calc_right_partition(left, right, op_sel);
     //cout << "partitioned to " << r_parts << endl;
     unsigned int start_part = 0;
@@ -3792,6 +3907,11 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
 }
 
 
+///
+/**
+The order_on_host function is called into action by emit_order when the computation on the records in the column being ordered is to big to fit into gpu. This function
+does the ordering on the host device instead.
+**/ 
 void order_on_host(CudaSet *a, CudaSet* b, queue<string> names, stack<string> exe_type, stack<string> exe_value)
 {
     unsigned int tot = 0;
@@ -3848,7 +3968,13 @@ void order_on_host(CudaSet *a, CudaSet* b, queue<string> names, stack<string> ex
     delete [] temp;
     delete [] permutation;
 }
+///
+/**
+ emit_order is called when the keyword 'Order' is parsed. This function has 4 parameters 3 of them are command line variables read by the scanner. This 
+function allows columns to be sorted in ascending or descending order by whatever the user specifies. If the computation requires to much  memory it 
+will be done on the host device instead.
 
+ **/
 
 
 void emit_order(char *s, char *f, int e, int ll)
@@ -4022,6 +4148,11 @@ void emit_order(char *s, char *f, int e, int ll)
 }
 
 
+///
+/**
+emit_select is the function called when the scanner reads over the keyword 'SELECT'. emit_select has 3 parameters all of whcih are entered into the command line
+Function allows user to pick selected data and view as columns  
+**/
 void emit_select(char *s, char *f, int ll)
 {
 
@@ -4297,6 +4428,11 @@ void emit_select(char *s, char *f, int ll)
 }
 
 
+/**
+emit_insert is the function called when the keyword 'INSERT' is parsed over. This function calls insert_records(f,s)
+**/
+//Both the source and destination of the insert operator can be either derived or permanent dataset
+//But for now lets see if I can code only permanent to permanent code path and get away with it
 void emit_insert(char *f, char* s) {
     statement_count++;
     if (scan_state == 0) {
@@ -4357,6 +4493,9 @@ void emit_delete(char *f)
 
 }
 
+/**
+ emit_case is called when case statments like THEN, ELSE, WHEN, and END are use with CASE
+**/ 
 void emit_case()
 {
     op_case = 1;
@@ -4372,6 +4511,11 @@ void emit_case()
     */
 }
 
+/**
+emit_display is the function called when the keyword 'DISPLAY' is parsed over. The function checks for variable *f. If variable is found it calls function Display with 
+parameters .
+ Note:Has improper cout statment might be fixed in code fix
+ **/
 void emit_display(char *f, char* sep)
 {
     statement_count++;
@@ -4411,6 +4555,11 @@ void emit_display(char *f, char* sep)
 }
 
 
+/** 
+When the flex scanner encounters the Keyword(token) 'FILTER' it returns FILTER to Bison and the action is preformed. 
+The action for FILTER is a call to the Function emit_filter. This function looks over the user command for recognizable variables
+names from the data dictionary. If it finds these variables the requested table and column name is filtered.
+**/
 void emit_filter(char *s, char *f)
 {
     statement_count++;
@@ -4499,6 +4648,10 @@ void emit_filter(char *s, char *f)
     };
 }
 
+/**
+emit_store is a function that is called when the keyword 'STORE' is parsed over. emit_store makes sure that the variable the user is using is a pre-existing one.
+If varaible exists function calls an instance of Store function for Cudaset class object.
+**/
 void emit_store(char *s, char *f, char* sep)
 {
     statement_count++;
@@ -4534,6 +4687,11 @@ void emit_store(char *s, char *f, char* sep)
 };
 
 
+/**
+emit_store_binary is a function that is called when the keyword 'STORE' and 'Binary' are parsed over in a command. 
+emit_store makes sure that the variable the user is using is a pre-existing one. If varaible exists function calls an instance of Store function 
+for Cudaset class object.This function then stores data into binary file
+**/
 void emit_store_binary(char *s, char *f)
 {
     statement_count++;
@@ -4594,6 +4752,10 @@ void emit_store_binary(char *s, char *f)
 
 };
 
+/**
+emit_load_binary opens the corrsponding header file to namevars queue value. It then creates new Cudaset class object with
+apporaite parameters. Function called by load_vars.
+**/
 
 void emit_load_binary(const char *s, const char *f, int d)
 {
@@ -4639,6 +4801,9 @@ void emit_load_binary(const char *s, const char *f, int d)
 }
 
 
+/** 
+emit_load function is called when the keyword 'LOAD' is parsed over. Function used ot create a pointer to Cudaset and intialize its variables. 
+**/
 void emit_load(char *s, char *f, int d, char* sep)
 {
     statement_count++;
@@ -4669,6 +4834,9 @@ void emit_load(char *s, char *f, int d, char* sep)
     };
 }
 
+/** 
+ emit_show_tables() prints the name of every table in data_dict map structure.
+**/
 void emit_show_tables()
 {
     if (scan_state == 1) {
@@ -4680,6 +4848,9 @@ void emit_show_tables()
     return;
 }
 
+/**
+This function deletes a table name(table_name ) from the data_dict map structure 
+**/
 void emit_drop_table(char* table_name)
 {
     if (scan_state == 1) {
@@ -4713,6 +4884,10 @@ void emit_drop_table(char* table_name)
 }
 
 
+/**
+emit_describe looks through the data dictiory map called data_dict to find parameter table_name. Once table_name is found it goes through each column 
+and prints to the screen what type of variables each holds.
+**/
 void emit_describe_table(char* table_name)
 {
     if (scan_state == 1) {
@@ -4741,6 +4916,9 @@ void emit_describe_table(char* table_name)
 
 
 
+/** 
+yyerror handles errors during the Bison parser phase called by function yyparse()
+**/  
 void yyerror(char *s, ...)
 {
     extern int yylineno;
@@ -4756,6 +4934,8 @@ void yyerror(char *s, ...)
 
 }
 
+/** clean_Queues empties all global queue data structures used during program execution
+**/
 void clean_queues()
 {
     while(!op_type.empty()) op_type.pop();
@@ -4784,6 +4964,11 @@ void clean_queues()
     join_and_cnt.clear();
 }
 
+/**
+ load_vars() is a function that takes variables used in the Alenka commands entered or read from file/user(used_vars)
+ and pushes data onto typevars(datatype of column data) and namevars(column name) queues. The function then calls
+ emit_load_binary.load_vars() is called from execute_files.
+ **/
 void load_vars()
 {
     if(used_vars.size() == 0) {
@@ -4818,6 +5003,11 @@ void load_vars()
     };
 }
 
+/** This Function is considered the main controlling because it control most of what alenka does and is the only function called by the main function.
+this function has an if statments for the three different modes of alenka. -l lets you adjust the amount of data processed at once when it is sent over to gpu. -v
+is verbose mode and it lets you see more information about the queries and data sent over. -i is Ineractive mode, this lets you apply you on quiries using the 
+requested language defined in Bison.y instead of reading from file. Function accepts command arguments and number of arguments.
+**/
 int execute_file(int ac, char **av)
 {
 	cout << "execute_file->start" << endl;
@@ -4850,6 +5040,7 @@ string script;
 
     load_col_data(data_dict, "data.dictionary");
 
+	/* If not interactive mode it opens file in read mode */	
     if (!interactive) {
         if((yyin = fopen(av[ac-1], "r")) == NULL) {
             perror(av[ac-1]);
@@ -4965,7 +5156,12 @@ string script;
 
 
 //external c global to report errors
-//char alenka_err[4048];
+char alenka_err[4048];
+/** 
+ One of the lib functions written by Randoplh 
+ Main lib function controls program executation calls function yyparse to parse through valid Alenka commands.
+ No lib function is ran during the normal flow of Alenka these are add ons
+**/
 
 int alenkaExecute(char *s)
 {
@@ -5044,6 +5240,10 @@ void alenkaInit(char ** av)
     printf("Alenka initialised\n");
 }
 
+/** 
+Frees up memory on the device that Alenka was useses 
+No lib function is ran during the normal flow of Alenka these are add ons
+**/
 void alenkaClose()
 {
     statement_count = 0;

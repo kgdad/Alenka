@@ -26,6 +26,10 @@ struct distinct : public binary_function<T,T,T>
 };
 
 
+/** 
+select is yhe function that takes everything done in the select command statment and makes sure the right data and columns are selected. 
+Performs actions on queues. This function accepts 8 arguments.  
+**/
 void select(queue<string> op_type, queue<string> op_value, queue<int_type> op_nums, queue<float_type> op_nums_f, CudaSet* a,
             CudaSet* b, vector<thrust::device_vector<int_type> >& distinct_tmp, bool& one_liner)
 {
