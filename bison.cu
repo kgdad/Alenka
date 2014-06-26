@@ -3382,19 +3382,11 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
     stack<string> exe_type;
     set<string> field_names;
     exe_type.push(f2);
-    /*
-	for(string *it=right->columnNames.begin(); it!=right->columnNames.end();it++) {
-        if (std::find(c->columnNames.begin(), c->columnNames.end(), *it) != c->columnNames.end() || *it == f2) {
-            field_names.insert(*it);
+	for(unsigned int i = 0; i < right->columnNames.size(); i++) {
+        if (std::find(c->columnNames.begin(), c->columnNames.end(), right->columnNames[i]) != c->columnNames.end() || right->columnNames[i] == f2) {
+            field_names.insert(right->columnNames[i]);
         };
     };
-    */
-    cout << "emit_multijoin->changed code, inserting field_names" << endl;
-    for(unsigned int i = 0; i < right->columnNames.size(); i++) {
-    	if(std::find(c->columnNames.begin(), c->columnNames.end(), right->columnNames[i]) != c->columnNames.end() || right->columnNames[i] == f2) {
-    		field_names.insert(right->columnNames[i]);
-    	}
-    }
 
     right->hostRecCount = right->mRecCount;
     while(start_part < right->segCount) {
@@ -3420,13 +3412,12 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
         cout << "emit_multijoin->loaded " << cnt_r << " " << getFreeMem() << endl;
         right->mRecCount = cnt_r;
 
+        
         cout << "emit_multijoin->sort on GPU or CPU.  FreeMem: " << getFreeMem() << ", Needed Mem: " << right->mRecCount*max_char(right) << endl;
         cout << "emit_multijoin->max_row=" << row_size(right) << ", max_row*mRecCount=" << right->mRecCount*row_size(right) << endl;
         //if(right->not_compressed && getFreeMem() < right->mRecCount*max_char(right)*2) {
         //Is there enough free memory on the GPU to sort on the GPU or do we need to do it on the CPU?
-        if(right->not_compressed && getFreeMem() < right->mRecCount*row_size(right)) {
-        	cout << "emit_multijoin->CopyToHost" << endl;
-            right->CopyToHost(0, right->mRecCount);
+		if(right->not_compressed && getFreeMem() < right->mRecCount*maxsz(right)*2) {            right->CopyToHost(0, right->mRecCount);
             right->deAllocOnDevice();
             if (left->type[colname1]  != 2)
                 order_inplace1(right, exe_type, field_names, 0);

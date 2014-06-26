@@ -1975,17 +1975,13 @@ bool CudaSet::LoadBigFile(FILE* file_p)
     };
 	
 	//clear the varchars
-/*	for(auto it=columnNames.begin(); it!=columnNames.end();it++) {
-		if(type[*it] == 2) {			
-			memset(h_columns_char[*it], 0, maxRecs*char_size[*it]);
+	
+	//for(auto it=columnNames.begin(); it!=columnNames.end();it++) {
+	for(unsigned int i = 0; i < mColumnCount; i++) {
+		if(type[columnNames[i]] == 2) {			
+			memset(h_columns_char[columnNames[i]], 0, maxRecs*char_size[columnNames[i]]);
 		};
-	};*/
 
-    for(unsigned int i = 0; i < columnNames.size(); i++) {
-    	if(type[columnNames[i]] == 2) {
-    		memset(h_columns_char[columnNames[i]], 0, maxRecs*char_size[columnNames[i]]);
-    	}
-    }
 
     //while (count < process_count && fgets(line, 1000, file_p) != NULL) {
     while (count < process_count && fgets(line, 1000, file_p) != NULL) {
@@ -3211,6 +3207,21 @@ size_t max_tmp(CudaSet* a)
 
 };
 
+size_t maxsz(CudaSet* a)
+{
+    size_t tot_sz = 0;
+    for(unsigned int i = 0; i < a->columnNames.size(); i++) {
+        if(a->type[a->columnNames[i]] == 0) {
+			tot_sz = tot_sz + int_size;
+		}
+        else if(a->type[a->columnNames[i]] == 1) {
+			tot_sz = tot_sz + float_size;
+		}
+		else
+			tot_sz = tot_sz + a->char_size[a->columnNames[i]];
+    };
+	return tot_sz;
+};	
 
 /**
 setSegment is called by emit_select. This function determines the number of segments based off the size and number of records. setSegments has two arguments a CudaSet 

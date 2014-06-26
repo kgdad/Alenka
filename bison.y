@@ -1045,9 +1045,9 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
     stack<string> exe_type;
     set<string> field_names;
     exe_type.push(f2);
-	for(auto it=right->columnNames.begin(); it!=right->columnNames.end();it++) {
-        if (std::find(c->columnNames.begin(), c->columnNames.end(), *it) != c->columnNames.end() || *it == f2) {
-            field_names.insert(*it);
+	for(unsigned int i = 0; i < right->columnNames.size(); i++) {
+        if (std::find(c->columnNames.begin(), c->columnNames.end(), right->columnNames[i]) != c->columnNames.end() || right->columnNames[i] == f2) {
+            field_names.insert(right->columnNames[i]);
         };
     };
 
@@ -1075,7 +1075,7 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
         //cout << "loaded " << cnt_r << " " << getFreeMem() << endl;
         right->mRecCount = cnt_r;
 
-        if(right->not_compressed && getFreeMem() < right->mRecCount*max_char(right)*2) {
+        if(right->not_compressed && getFreeMem() < right->mRecCount*maxsz(right)*2) {
             right->CopyToHost(0, right->mRecCount);
             right->deAllocOnDevice();
             if (left->type[colname1]  != 2)
@@ -2831,7 +2831,7 @@ void alenkaInit(char ** av)
     scan_state = 1;
     statement_count = 0;
     clean_queues();
-    //context = CreateCudaDevice(0, NULL, true);
+    context = CreateCudaDevice(0, NULL, true);
     printf("Alenka initialised\n");
 }
 
