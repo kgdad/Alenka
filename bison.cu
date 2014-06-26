@@ -39,7 +39,6 @@
    infringing on user name space.  This should be done even for local
    variables, as they might otherwise be expanded by user macros.
    There are some unavoidable exceptions within include files to
-   define necessary library symbols; they are noted "INFRINGES ON
    USER NAME SPACE" below.  */
 
 /** All of the code in bison is related to the tokens, and token definations for the Flex parser to collect upon input of the syntax defined.
@@ -2714,6 +2713,7 @@ void emit_distinct()
 
 /**
 This function is called when the keyword 'JOIN' is parsed over.
+*/
 void emit_join()
 {
 
@@ -2875,7 +2875,7 @@ void emit_join_tab(char *s, char tp)
 /**
 order_inplace changes the order of columns on device. This function accpets CudaSet pointer, stack of strings, set of strings and a boolean variable.
 **/
-void order_inplace(CudaSet* a, stack<string> exe_type, set<string> field_names, bool update_str)
+void order_inplace_host(CudaSet* a, stack<string> exe_type, set<string> field_names, bool update_str)
 {
     unsigned int* permutation = new unsigned int[a->mRecCount];
     thrust::sequence(permutation, permutation + a->mRecCount);
@@ -2928,14 +2928,18 @@ void order_inplace(CudaSet* a, stack<string> exe_type, set<string> field_names, 
 void order_inplace1(CudaSet* a, stack<string> exe_type, set<string> field_names, bool update_str)
 {
     unsigned int sz = a->mRecCount;
+    cout << "order_inplace1->Attempting to device_malloc for " << sz << " records" << endl;
     thrust::device_ptr<unsigned int> permutation = thrust::device_malloc<unsigned int>(sz);
+    cout <<"order_inplace1->device_malloc successful, now sequence" << endl;
     thrust::sequence(permutation, permutation+sz,0,1);
 
     unsigned int* raw_ptr = thrust::raw_pointer_cast(permutation);
     void* temp;
+    cout << "order_inplace1->getting ready to cudaMalloc" << endl;
     CUDA_SAFE_CALL(cudaMalloc((void **) &temp, a->mRecCount*max_char(a, field_names)));
 
     for(int i=0; !exe_type.empty(); ++i, exe_type.pop()) {
+    	cout << "order_inplace1->for loop [" << i << "]" << endl;
         if (a->type[exe_type.top()] == 0 ) {
             a->d_columns_int[exe_type.top()].resize(sz);
             thrust::copy(a->h_columns_int[exe_type.top()].begin(), a->h_columns_int[exe_type.top()].begin() + sz, a->d_columns_int[exe_type.top()].begin());
@@ -3020,14 +3024,19 @@ void order_inplace(CudaSet* a, stack<string> exe_type, set<string> field_names, 
 {
 
     unsigned int sz = a->mRecCount;
+    cout << "order_inplace->Attempting to device_malloc for " << sz << " records: " << getFreeMem() << endl;
     thrust::device_ptr<unsigned int> permutation = thrust::device_malloc<unsigned int>(sz);
+    cout <<"order_inplace->device_malloc successful, now sequence: " << getFreeMem() << endl;
     thrust::sequence(permutation, permutation+sz,0,1);
 
     unsigned int* raw_ptr = thrust::raw_pointer_cast(permutation);
     void* temp;
+    cout << "order_inplace->getting ready to cudaMalloc" << endl;
     CUDA_SAFE_CALL(cudaMalloc((void **) &temp, sz*max_char(a, field_names)));
+    cout << "order_inplace->cudaMalloc worked" << endl;
 
     for(int i=0; !exe_type.empty(); ++i, exe_type.pop()) {
+    	cout << "order_inplace->first for loop[" << i << "]" << endl;
         if (a->type[exe_type.top()] == 0)
             update_permutation(a->d_columns_int[exe_type.top()], raw_ptr, sz, "ASC", (int_type*)temp);
         else if (a->type[exe_type.top()] == 1)
@@ -3038,9 +3047,11 @@ void order_inplace(CudaSet* a, stack<string> exe_type, set<string> field_names, 
         };
     };
 
+    cout << "done with first for loop" << endl;
 
 
     for (set<string>::iterator it=field_names.begin(); it!=field_names.end(); ++it) {
+    	cout << "order_inplace->second for loop" << endl;
         if (a->type[*it] == 0) {
             apply_permutation(a->d_columns_int[*it], raw_ptr, sz, (int_type*)temp);
         }
@@ -3281,6 +3292,7 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
     CudaSet* c = new CudaSet(right, left, op_sel_s, op_sel_s_as);
 
     if ((left->mRecCount == 0 && !left->filtered) || (right->mRecCount == 0 && !right->filtered)) {
+    	cout << "emit_multijoin->Created new CudaSet and returning" << endl;
         c = new CudaSet(left, right, op_sel_s, op_sel_s_as);
         varNames[res_name] = c;
         clean_queues();
@@ -3294,6 +3306,7 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
 
     string colname1, colname2;
     string tmpstr;
+    cout << "emit_multijoin->looking for column names" << endl;
     if (std::find(left->columnNames.begin(), left->columnNames.end(), f1) != left->columnNames.end()) {
         colname1 = f1;
         if (std::find(right->columnNames.begin(), right->columnNames.end(), f2) != right->columnNames.end()) {
@@ -3369,11 +3382,19 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
     stack<string> exe_type;
     set<string> field_names;
     exe_type.push(f2);
-	for(auto it=right->columnNames.begin(); it!=right->columnNames.end();it++) {
+    /*
+	for(string *it=right->columnNames.begin(); it!=right->columnNames.end();it++) {
         if (std::find(c->columnNames.begin(), c->columnNames.end(), *it) != c->columnNames.end() || *it == f2) {
             field_names.insert(*it);
         };
     };
+    */
+    cout << "emit_multijoin->changed code, inserting field_names" << endl;
+    for(unsigned int i = 0; i < right->columnNames.size(); i++) {
+    	if(std::find(c->columnNames.begin(), c->columnNames.end(), right->columnNames[i]) != c->columnNames.end() || right->columnNames[i] == f2) {
+    		field_names.insert(right->columnNames[i]);
+    	}
+    }
 
     right->hostRecCount = right->mRecCount;
     while(start_part < right->segCount) {
@@ -3381,11 +3402,11 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
         bool rsz = 1;
         right->deAllocOnDevice();
 
-        //cout << "loading " << start_part << " " << r_parts << " " << getFreeMem() << endl;
-        //cout << "Tot segs " << right->segCount << endl;
+        cout << "emit_multijoin->loading " << start_part << " " << r_parts << " " << getFreeMem() << endl;
+        cout << "emit_multijoin->Tot segs " << right->segCount << endl;
         //if(right->not_compressed)
         //order_inplace_host(right, exe_type, field_names, 0);
-        //cout << "ordered " << endl;
+        cout << "ordered " << endl;
 
         if(start_part + r_parts >= right->segCount ) {
             cnt_r = load_right(right, colname2, f2, op_g1, op_sel, op_alt, decimal_join, str_join, rcount, start_part, right->segCount, rsz);
@@ -3396,10 +3417,15 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
             start_part = start_part+r_parts;
         };
 
-        //cout << "loaded " << cnt_r << " " << getFreeMem() << endl;
+        cout << "emit_multijoin->loaded " << cnt_r << " " << getFreeMem() << endl;
         right->mRecCount = cnt_r;
 
-        if(right->not_compressed && getFreeMem() < right->mRecCount*max_char(right)*2) {
+        cout << "emit_multijoin->sort on GPU or CPU.  FreeMem: " << getFreeMem() << ", Needed Mem: " << right->mRecCount*max_char(right) << endl;
+        cout << "emit_multijoin->max_row=" << row_size(right) << ", max_row*mRecCount=" << right->mRecCount*row_size(right) << endl;
+        //if(right->not_compressed && getFreeMem() < right->mRecCount*max_char(right)*2) {
+        //Is there enough free memory on the GPU to sort on the GPU or do we need to do it on the CPU?
+        if(right->not_compressed && getFreeMem() < right->mRecCount*row_size(right)) {
+        	cout << "emit_multijoin->CopyToHost" << endl;
             right->CopyToHost(0, right->mRecCount);
             right->deAllocOnDevice();
             if (left->type[colname1]  != 2)
@@ -3408,13 +3434,13 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
                 order_inplace1(right, exe_type, field_names, 1);
         }
         else {
+        	cout << "emit_multijoin->order_inplace" << endl;
             if (left->type[colname1]  != 2)
                 order_inplace(right, exe_type, field_names, 0);
             else {
                 order_inplace(right, exe_type, field_names, 1);
             };
         };
-
 
         for (unsigned int i = 0; i < left->segCount; i++) {
 
@@ -3489,8 +3515,8 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
                 else if(verbose)
                     cout << "No need of sorting " << endl;
 
-                //cout << "join " << cnt_l << ":" << cnt_r << " " << join_type.front() << endl;
-                //cout << "SZ " << left->d_columns_int[colname1].size() << endl;
+                cout << "emit_multijoin->join " << cnt_l << ":" << cnt_r << " " << join_type.front() << endl;
+                cout << "emit_multijoin->SZ " << left->d_columns_int[colname1].size() << endl;
 
 
                 if (left->d_columns_int[colname1][0] > right->d_columns_int[colname2][cnt_r-1] ||
@@ -3546,7 +3572,7 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
                                     mgpu::less<int_type>(), *context);
                 };
 
-                //cout << "RES " << res_count << " seg " << i << endl;
+                cout << "emit_multijoin->RES " << res_count << " seg " << i << endl;
 
                 int* r1 = aIndicesDevice->get();
                 thrust::device_ptr<int> d_res1((int*)r1);
@@ -3572,7 +3598,7 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
                     string f4 = op_g.front();
                     op_g.pop();
 
-                    //cout << "ADDITIONAL COL JOIN " << f3 << " " << f4 << " " << getFreeMem() << endl;
+                    cout << "emit_multijoin->ADDITIONAL COL JOIN " << f3 << " " << f4 << " " << getFreeMem() << endl;
 
                     queue<string> rc;
                     rc.push(f3);
@@ -3644,14 +3670,14 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
 
                     for (map<string, set<unsigned int> >::iterator itr = left->orig_segs.begin(); itr != left->orig_segs.end(); itr++) {
                         for (set<unsigned int>::iterator it = itr->second.begin(); it != itr->second.end(); it++) {
-                            //cout << "LEFT SEGS " << itr->first << " : " << *it << endl;
+                            cout << "emit_multijoin->LEFT SEGS " << itr->first << " : " << *it << endl;
                             c->orig_segs[itr->first].insert(*it);
                         };
                     };
 
                     for (map<string, set<unsigned int> >::iterator itr = right->orig_segs.begin(); itr != right->orig_segs.end(); itr++) {
                         for (set<unsigned int>::iterator it = itr->second.begin(); it != itr->second.end(); it++) {
-                            //cout << "RIGHT SEGS " << itr->first << " : " << *it << endl;
+                            cout << "emit_multijoin->RIGHT SEGS " << itr->first << " : " << *it << endl;
                             c->orig_segs[itr->first].insert(*it);
                         };
                     };
@@ -3699,8 +3725,8 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
                                 int_type lower_val;
 
 
-                                //if(verbose)
-                                //    cout << "processing " << op_sel1.front() << " " << i << " " << cmp_type << endl;
+                                if(verbose)
+                                    cout << "emit_multijoin->processing " << op_sel1.front() << " " << i << " " << cmp_type << endl;
 
                                 if(!copied) {
                                     if(left->filtered && left->prm_index == 'R') {
@@ -3732,7 +3758,7 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
                                 cnt = ((unsigned int*)h)[0];
                                 lower_val = ((int_type*)(((unsigned int*)h)+1))[0];
                                 bits = ((unsigned int*)((char*)h + cnt))[8];
-                                //cout << cnt << " " << lower_val << " " << bits << endl;
+                                cout << "emit_multijoin->" << cnt << " " << lower_val << " " << bits << endl;
 
                                 if(bits == 8) {
                                     if(left->type[op_sel1.front()] == 0) {
@@ -3849,7 +3875,7 @@ void emit_multijoin(string s, string j1, string j2, unsigned int tab, char* res_
                     cudaFree(temp);
                 };
             };
-            //std::cout<< endl << "seg time " <<  ( ( std::clock() - start2 ) / (double)CLOCKS_PER_SEC ) << " " << getFreeMem() << endl;
+            std::cout<< endl << "emit_multijoin->seg time " <<  ( ( std::clock() - start2 ) / (double)CLOCKS_PER_SEC ) << " " << getFreeMem() << endl;
         };
     };
 
@@ -4331,6 +4357,7 @@ void emit_select(char *s, char *f, int ll)
                 a->GroupBy(op_v2);
             };
 
+            cout << "calling select " << endl;
             select(op_type,op_value,op_nums, op_nums_f,a,b, distinct_tmp, one_liner);
 
             if(i == 0)
@@ -4352,10 +4379,13 @@ void emit_select(char *s, char *f, int ll)
                 c->name = s;
             };
 
+            cout << "emit_select->if to add or copy" << endl;
             if (ll != 0 && cycle_count > 1  && b->mRecCount > 0) {
+            	cout << "add" << endl;
                 add(c,b,op_v3, aliases, distinct_tmp, distinct_val, distinct_hash, a);
             }
             else {
+            	cout << "start copy" << endl;
                 //copy b to c
                 unsigned int c_offset = c->mRecCount;
                 c->resize(b->mRecCount);
@@ -4374,7 +4404,7 @@ void emit_select(char *s, char *f, int ll)
                 };
             };
         };
-        //std::cout<< "cycle sel time " <<  ( ( std::clock() - start3 ) / (double)CLOCKS_PER_SEC ) << " " << getFreeMem() << '\n';
+        std::cout<< "cycle sel time " <<  ( ( std::clock() - start3 ) / (double)CLOCKS_PER_SEC ) << " " << getFreeMem() << '\n';
     };
 
     a->mRecCount = ol_count;
@@ -4403,7 +4433,7 @@ void emit_select(char *s, char *f, int ll)
     c->maxRecs = c->mRecCount;
     c->name = s;
     c->keep = 1;
-    //cout << "select res " << c->mRecCount << endl;
+    cout << "select res " << c->mRecCount << endl;
 
 
     clean_queues();
@@ -5013,6 +5043,7 @@ int execute_file(int ac, char **av)
 	cout << "execute_file->start" << endl;
 bool just_once  = 0;
 string script;
+string data_dir;
 
     process_count = 6200000;
     verbose = 0;
@@ -5236,7 +5267,7 @@ void alenkaInit(char ** av)
     scan_state = 1;
     statement_count = 0;
     clean_queues();
-    //context = CreateCudaDevice(0, NULL, true);
+    context = CreateCudaDevice(0, NULL, true);
     printf("Alenka initialised\n");
 }
 
@@ -5253,7 +5284,7 @@ void alenkaClose()
         cudaFree(alloced_tmp);
 }
 
-
+/*
 extern "C"
 int alenka_JDBC(char *s) {
 		//turn on debugging
@@ -5298,6 +5329,54 @@ int alenka_JDBC(char *s) {
 
         yy_delete_buffer(bp);
 
+        if (verbose) {
+                cout << "cycle time "
+                                << ((std::clock() - start1) / (double) CLOCKS_PER_SEC) << endl;
+        };
+
+        return 0;
+}
+*/
+extern "C"
+int alenka_JDBC(char *s) {
+	verbose = 1;
+        //Load the data dictionary
+        load_col_data(data_dict, "data.dictionary");
+
+        //Read the SQL into internal buffers
+        yy_scan_string(s);
+
+        //initialize variables
+        hash_seed = 100;
+        scan_state = 0;
+        statement_count = 0;
+        clean_queues();
+
+        //Parse the query
+        cout << "first yyparse()" << endl;
+        if (yyparse()) {
+                printf("SQL scan parse failed \n");
+                return 1;
+        };
+
+        //Reset variables for execution
+        cout << "reset vars and clean_queues" << endl;
+        scan_state = 1;
+        load_vars();
+        statement_count = 0;
+        clean_queues();
+
+        yy_scan_string(s);
+        std::clock_t start1 = std::clock();
+
+        //Excecute Query
+        cout << "second yyparse" << endl;
+        if (yyparse()) {
+                printf("SQL scan parse failed \n");
+                return 1;
+        }
+
+        cout << "done" << endl;
         if (verbose) {
                 cout << "cycle time "
                                 << ((std::clock() - start1) / (double) CLOCKS_PER_SEC) << endl;

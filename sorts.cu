@@ -17,6 +17,7 @@
 template <typename KeyType>
 void update_permutation(thrust::device_vector<KeyType>& key, unsigned int* permutation, unsigned long long int RecCount, string SortType, KeyType* tmp)
 {
+	cout << "update_permutation->declare device_ptr " << getFreeMem() << endl;
     thrust::device_ptr<unsigned int> dev_per(permutation);
     // temporary storage for keys
     thrust::device_ptr<KeyType> temp(tmp);
@@ -24,6 +25,7 @@ void update_permutation(thrust::device_vector<KeyType>& key, unsigned int* permu
     thrust::gather(dev_per, dev_per+RecCount, key.begin(), temp);
 
     // stable_sort the permuted keys and update the permutation
+    cout << "update_permutation->stable_sort_by_key: " << getFreeMem() << endl;
     if (SortType.compare("DESC") == 0 )
         thrust::stable_sort_by_key(temp, temp+RecCount, dev_per, thrust::greater<KeyType>());
     else

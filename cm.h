@@ -373,6 +373,7 @@ size_t load_queue(queue<string> c1, CudaSet* right, bool str_join, string f2, si
                   unsigned int start_segment, unsigned int end_segment, bool rsz = 1, bool flt = 1);
 size_t max_char(CudaSet* a);
 size_t max_tmp(CudaSet* a);
+size_t row_size(CudaSet* a);
 void setSegments(CudaSet* a, queue<string> cols);
 size_t max_char(CudaSet* a, set<string> field_names);
 size_t max_char(CudaSet* a, queue<string> field_names);

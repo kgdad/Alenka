@@ -60,6 +60,7 @@ void select(queue<string> op_type, queue<string> op_value, queue<int_type> op_nu
     bool prep = 0;
     one_line = 0;
 
+    cout << "select" << endl;
     thrust::device_ptr<bool> d_di(a->grp);
 
     std::auto_ptr<ReduceByKeyPreprocessData> ppData;
@@ -67,6 +68,7 @@ void select(queue<string> op_type, queue<string> op_value, queue<int_type> op_nu
     if (!a->columnGroups.empty() && (a->mRecCount != 0))
         res_size = a->grp_count;
 
+    cout << "select->entering for loop" << endl;
     for(int i=0; !op_type.empty(); ++i, op_type.pop()) {
 
         string ss = op_type.front();
@@ -79,9 +81,11 @@ void select(queue<string> op_type, queue<string> op_value, queue<int_type> op_nu
 
                 if(!prep && !a->columnGroups.empty()) {
 
+                	cout << "select->ReduceByKeyPreprocess" << endl;
                     mgpu::ReduceByKeyPreprocess<float_type>((int)a->mRecCount, thrust::raw_pointer_cast(d_di),
                                                             (bool*)0, head_flag_predicate<bool>(), (int*)0, (int*)0,
                                                             &ppData, *context);
+                    cout << "Complete ReduceByKeyPreprocess" << endl;
                     prep = 1;
                 };
 
@@ -96,7 +100,7 @@ void select(queue<string> op_type, queue<string> op_value, queue<int_type> op_nu
 
 
                     if(a->type[s1_val] == 0) {
-
+                    	cout << "select->copy" << endl;
                         thrust::copy(a->d_columns_int[s1_val].begin(), a->d_columns_int[s1_val].begin() + a->mRecCount,
                                      distinct_tmp[dist_processed].begin());
                         dist_processed++;
@@ -116,7 +120,7 @@ void select(queue<string> op_type, queue<string> op_value, queue<int_type> op_nu
                 }
 
                 else if (ss.compare("COUNT") == 0) {
-
+                	cout << "select->count" << endl;
                     s1 = exe_type.top();
                     if(s1.compare("VECTOR") != 0) {  // non distinct
 

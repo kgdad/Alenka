@@ -500,6 +500,7 @@ void CudaSet::resize_join(size_t addRecs)
 
 
 /** This fucntion is used to resize column record total.This function has 1 argument called addRecs of size_t data type.
+ */
 void CudaSet::resize(size_t addRecs)
 {
     mRecCount = mRecCount + addRecs;
@@ -1974,12 +1975,17 @@ bool CudaSet::LoadBigFile(FILE* file_p)
     };
 	
 	//clear the varchars
-	for(auto it=columnNames.begin(); it!=columnNames.end();it++) {
+/*	for(auto it=columnNames.begin(); it!=columnNames.end();it++) {
 		if(type[*it] == 2) {			
 			memset(h_columns_char[*it], 0, maxRecs*char_size[*it]);
 		};
-	};
+	};*/
 
+    for(unsigned int i = 0; i < columnNames.size(); i++) {
+    	if(type[columnNames[i]] == 2) {
+    		memset(h_columns_char[columnNames[i]], 0, maxRecs*char_size[columnNames[i]]);
+    	}
+    }
 
     //while (count < process_count && fgets(line, 1000, file_p) != NULL) {
     while (count < process_count && fgets(line, 1000, file_p) != NULL) {
@@ -3165,6 +3171,20 @@ size_t max_char(CudaSet* a, queue<string> field_names)
     return max_char;
 };
 
+size_t row_size(CudaSet* a) {
+	size_t size = 8;
+	for(unsigned int i = 0; i < a->columnNames.size(); i++) {
+			cout << "column[" << i << "]: " << a->columnNames[i] << endl;
+	        if(a->type[a->columnNames[i]] == 2) {
+	        	size = size + a->char_size[a->columnNames[i]];
+	        } else if(a->type[a->columnNames[i]] == 1) {
+	        	size = size + float_size;
+	        } else if(a->type[a->columnNames[i]] == 0) {
+	        	size = size + int_size;
+	        }
+	}
+	return size;
+}
 
 
 /** 
